@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Prompt Enhance",
-    "description": "Opens an independent enhancement session that clarifies a rough prompt, then inserts the finished prompt back into the composer."
+    "description": "A right-side panel that asks a few clarifying questions and inserts a finished prompt into the composer — without creating a DSH session."
   }
 }

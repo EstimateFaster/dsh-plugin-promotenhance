@@ -81,7 +81,8 @@ test('digestDoc wraps the digest as a structured document', () => {
   const doc = digestDoc({ turns: [{ user: 'a', assistant: 'b' }], truncated: false, omittedTurns: 0 }, '/repo')
   assert.equal(doc.kind, 'session-digest')
   assert.equal(doc.version, 1)
-  assert.equal(doc.cwd, '/repo')
+  assert.equal(doc.cwd, 'repo')
+  assert.equal(doc.workspace, 'repo')
   assert.deepEqual(doc.turns, [{ user: 'a', assistant: 'b' }])
 })
 

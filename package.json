@@ -1,8 +1,8 @@
 {
   "name": "dsh-prompt-enhance",
-  "version": "0.2.0",
-  "description": "Prompt enhance: a side panel that clarifies a rough prompt through a short Q&A and inserts the finished prompt into the composer, without creating any DSH session.",
-  "private": true,
+  "version": "1.0.0",
+  "description": "DSH side-panel prompt enhancer: clarify a rough prompt through a short Q&A (with read-only workspace context) and insert the finished prompt into the composer without creating a session.",
+  "private": false,
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -17,9 +17,45 @@
     "locale",
     "cordis.patch.yml",
     "icon.svg",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "docs",
+    "examples",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
   ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "lint": "node scripts/lint.mjs",
+    "build": "node scripts/build-check.mjs",
+    "check": "npm run lint && npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "prompt",
+    "prompt-engineering",
+    "side-panel",
+    "cordis"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EstimateFaster/dsh-plugin-promotenhance.git"
+  },
+  "homepage": "https://github.com/EstimateFaster/dsh-plugin-promotenhance#readme",
+  "bugs": {
+    "url": "https://github.com/EstimateFaster/dsh-plugin-promotenhance/issues"
+  },
+  "author": "EstimateFaster",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
