@@ -2,6 +2,8 @@
 
 **Release date:** 2026-11-07 · **npm package:** `dsh-prompt-enhance@1.0.0`
 
+![Prompt enhance panel](https://raw.githubusercontent.com/EstimateFaster/dsh-plugin-promotenhance/main/docs/images/workspace.png)
+
 `dsh-prompt-enhance` turns a rough request typed in the DSH composer into a
 complete, directly executable prompt. The right-side panel asks a few
 high-signal questions, may inspect the target workspace (read-only), and writes
@@ -85,11 +87,11 @@ npm run build   → build ok
 npm audit       → 0 vulnerabilities
 ```
 
-Real isolated instance: `/enhance` → 3 questions → 6 201-character prompt →
+Real isolated instance: `/enhance` → 3 questions → a multi-thousand-character prompt →
 Insert → composer text matches; no host path in the generated prompt.
 
 ## Links
 
-- [README](../README.md)
-- [Audit and fixes](audit.md)
-- [Changelog](../CHANGELOG.md)
+- [README](https://github.com/EstimateFaster/dsh-plugin-promotenhance/blob/main/README.md)
+- [Audit and fixes](https://github.com/EstimateFaster/dsh-plugin-promotenhance/blob/main/docs/audit.md)
+- [Changelog](https://github.com/EstimateFaster/dsh-plugin-promotenhance/blob/main/CHANGELOG.md)
