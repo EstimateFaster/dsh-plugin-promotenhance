@@ -1,0 +1,18 @@
+# Example profile patch for $DSH_HOME/profiles/web/cordis.patch.yml.
+# Merge this entry with your existing patch list; do not replace the list.
+- id: prompt-enhance
+  config:
+    # Both provider and model must be set together. If either is missing, the
+    # plugin falls back to the session's default model.
+    provider: deepseek
+    model: deepseek-flash
+    reasoningEffort: high
+
+    # Tighten the guardrails. All values are optional; see README for ranges.
+    timeoutMs: 90000
+    maxTokens: 8000
+    maxQuestionRounds: 2
+    maxModelCalls: 8
+    maxToolCalls: 8
+    maxRoughChars: 4096
+    fileTools: true

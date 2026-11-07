@@ -1,9 +1,12 @@
 # dsh-prompt-enhance v2 设计：无会话的结构化提示词增强
 
-> 状态：设计定稿（本轮只做设计，不动代码）
-> 读者：下一轮按本文件实现的智能体
-> 范围：`dsh-prompt-enhance` 插件 v2；替换 v1 的「新建 DSH 会话 + 文本拼装」实现
-> 部署环境：`@deepseek-ai/dsh@0.2.1-rc.2`，profile `web`，Node 24
+> 状态：已实现，随 v1.0.0 发布（2026-11-07）。本文保留为设计记录，描述的
+> `P0`–`P2` 能力已在 `lib/` 中落地；实现细节以 README 与 `docs/audit.md` 为准。
+> 读者：维护者与希望理解取舍的贡献者。
+> 范围：`dsh-prompt-enhance` 插件 v2；替换 v1 的「新建 DSH 会话 + 文本拼装」实现。
+> 部署环境：DSH Web profile，Node 20+。
+> 公开说明：本文原始内部路径已脱敏为 `<repo>`、`<workspace>`、`<plugins>`、
+> `<gateway>`、`$DSH_HOME` 等占位符。
 
 ---
 
@@ -28,7 +31,7 @@
 
 ## 2. 设计原则
 
-1. **零 DSH 会话**：不调用 `sessionController.create/prompt/fork`，不新增 preset 行；增强过程只存在于插件内存 + 客户端面板。会话列表、工作区、`~/.dsh/sessions` 不因 `/enhance` 增加任何条目。
+1. **零 DSH 会话**：不调用 `sessionController.create/prompt/fork`，不新增 preset 行；增强过程只存在于插件内存 + 客户端面板。会话列表、工作区、`$DSH_HOME/sessions` 不因 `/enhance` 增加任何条目。
 2. **数据走带 schema 的通道**：模型侧用 `tools` 参数 + 工具结果，客户端↔宿主用 HTTP JSON；人只读最终 `prompt.markdown`。
 3. **最少活动部件**：复用 `commands`（入口）、`webServer`（数据平面）、`sidebarRight`（面板）、`inputActions.setDraft()`（回写）；不自造 Remote 命名空间、不写 typert 元数据。
 4. **状态权威在宿主，界面是可丢弃的视图**：面板刷新、换标签页、换浏览器都不改变事实；进程重启允许直接丢状态，但用户必须看到明确的可读提示。
@@ -327,7 +330,7 @@ inserted    --restart-------------------> collecting
 {
   "kind": "session-digest",
   "version": 1,
-  "cwd": "/root",
+  "cwd": "repo",
   "turns": [
     { "user": "1+1 等于几？只回答数字", "assistant": "2" }
   ],
@@ -362,7 +365,7 @@ inserted    --restart-------------------> collecting
 | 副作用 | **每次调用写 `command/run` + `command/done` 两条持久事件**（`dsh-commands/lib/types/index.d.ts:117`），并渲染一行命令记录（`dsh-client-ui-chat/lib/client.js:9505-9519` 把 `outcome.text` 放进节点） | 无 | 无 |
 | 载荷上限 | 受请求体上限约束（300 MiB，`dsh-client-connection/lib/index.js:30`），但载荷会进聊天记录 | 受各端 schema | 自己定（256 KiB） |
 | 流式 | 无 | 支持 | SSE 可做 |
-| 部署可行性 | 现成 | **阻塞**：部署只有 `dsh-typert-loader` / `-protocol` / `-registry`，没有生成器（`ls @deepseek-ai | grep typert`） | 现成：`ctx.webServer.register`（`dsh-host-webserver/lib/types/index.d.ts:174`），本机 `dsh-grokbot` 已在用（`/root/daily-news/dsh-plugin-bbws/lib/index.js:1049`） |
+| 部署可行性 | 现成 | **阻塞**：部署只有 `dsh-typert-loader` / `-protocol` / `-registry`，没有生成器（`ls @deepseek-ai | grep typert`） | 现成：`ctx.webServer.register`（`dsh-host-webserver/lib/types/index.d.ts:174`），本机 `dsh-grokbot` 已在用（`<plugins>/dsh-plugin-bbws/lib/index.js:1049`） |
 
 ### 6.2 结论
 
@@ -372,10 +375,10 @@ inserted    --restart-------------------> collecting
 
 - **为什么必须**：A 的返回通道只有 `CommandResult.text`，而它会被渲染成聊天节点（`dsh-client-ui-chat/lib/client.js:9512-9518`），问题批次与答案无法避免地写进用户会话；B 需要部署里不存在的生成器。要同时满足「零会话」与「结构化数据」且不污染转写，只能加一个数据平面端点。
 - **成本（约 120 行 + 3 个安全项）**：
-  1. `ctx.webServer.tapIndex` 注入每进程随机 token 到索引页；面板请求带 `x-pe-token`，不匹配 → 403。自定义路由不经过 DSH 的 `/api` 浏览器信任栅栏（`dsh-host-webserver` 自身“knows no harness concepts”，`dsh-host-webserver/README.md:12`），所以校验必须自己做。
+  1. `ctx.webServer.tapIndex` 注入每进程随机 token 到索引页；面板请求带 `x-dsh-prompt-enhance-token`，不匹配 → 403。自定义路由不经过 DSH 的 `/api` 浏览器信任栅栏（`dsh-host-webserver` 自身“knows no harness concepts”，`dsh-host-webserver/README.md:12`），所以校验必须自己做。
   2. `Origin` 存在时必须等于请求的 `Host`（CSRF 兜底）；`Content-Type` 必须是 `application/json`；方法白名单 `POST`（`/start`,`/answer`,`/cancel`,`/take`）与 `GET`（`/state`）。
   3. 自读 body，硬上限 256 KiB；错误一律 JSON，不返回栈。
-- 该路由与页面同源同端口，部署侧的 `dsh-gateway` 按 `req.url` 透传（`/opt/dsh-gateway/server.js:1149`），不需要额外代理配置。
+- 该路由与页面同源同端口，部署侧的 `dsh-gateway` 按 `req.url` 透传（`<gateway>/server.js:1149`），不需要额外代理配置。
 
 - **升级到 B 的触发条件**（任一满足）：需要**流式**把 token 推给面板；需要跨进程/远程客户端（非本机浏览器）复用；需要严格类型化的多端点 RPC 且有生成器可用。
 - **B 的验证步骤**（升级前必须先在 checkout 里过一遍）：① 确认 `dsh-typert-generator` 可安装且版本与 `dsh-typert-protocol` 匹配；② 用 `dsh-plugin-market/lib/typert.host.js` 作为模板，生成一个只含 `ping` 方法的命名空间；③ 在 profile 里挂载，验证客户端 `ctx.remote.<ns>.ping()` 返回；④ 验证 `@Remote` 流式方法在浏览器侧可用；⑤ 迁移 4 个端点，保留 C 作为回退开关一个版本。
@@ -628,7 +631,7 @@ while (buffer.readToolCalls.length > 0) {    // 只读工具调用（不是 ask_
 
 ## 13. 分阶段计划
 
-> 每阶段独立验收；回滚方式统一为：`cp -a` 快照目录（P0 前先做 `/root/dsh-workspace/dsh-plugin-promotenhance.bak-v1`），恢复后重启 `dsh web`（bundle 的 patch 与客户端 bundle 都是启动时加载）。
+> 每阶段独立验收；回滚方式统一为：`cp -a` 快照目录（P0 前先做 `<repo>.bak-v1`），恢复后重启 `dsh web`（bundle 的 patch 与客户端 bundle 都是启动时加载）。
 
 ### P0 单轮结构化生成 + 面板 + 插入（1–2 天）
 
@@ -670,7 +673,7 @@ while (buffer.readToolCalls.length > 0) {    // 只读工具调用（不是 ask_
 2. 工具调用 ≤12 次后强制收尾；单次结果 ≤4 KiB。
 3. 无 `ctx.web` provider 时，`web_search` 返回 `WEB_UNAVAILABLE` 而不是崩溃。
 
-**验证方法**：单测伪造 `fs`/`web` 服务；集成测试用 `/root/dsh-workspace/...` 真目录；`grep -n "readText" lib/tools.js` 确认每次读取前有 `contains` 校验。
+**验证方法**：单测伪造 `fs`/`web` 服务；集成测试用 `<workspace>/...` 真目录；`grep -n "readText" lib/tools.js` 确认每次读取前有 `contains` 校验。
 
 **回滚**：`tools: []`，system 去掉工具段（一个 config 开关 `features.tools=false`）。
 
@@ -694,7 +697,7 @@ while (buffer.readToolCalls.length > 0) {    // 只读工具调用（不是 ask_
 | 2 | **客户端调用 `commands/execute` 的鉴权路径** | 先例是 `dsh-client-ui-plan/lib/client.js:704`，但那是内置包；插件调用的权限模型未逐条核对 | 用最小插件在浏览器里 `ctx.remote.commands.execute(sessionId,'/enhance x',[])`，看是否 401/403 | 面板改用 HTTP 启动（`/start` 带 rough），命令仅作 UI 入口 |
 | 3 | **`ctx.fs` 是否对所有插件可见** | 服务存在（`dsh-fs/lib/types/index.d.ts:17`），但 `inject: ['fs']` 在 Web 组合下是否满足未实测 | 在插件里 `ctx.inject(['fs'], …)` 打日志，观察是否执行 | 只保留 web 工具；文件能力标注「未提供」 |
 | 4 | **手写 `tool` 消息能否被适配器接受** | `Message` 要求 `id`/`source`（`dsh-llm/lib/types/message.d.ts:124-170`），品牌是运行时空操作（`dsh-brand/lib/index.js:1-20`），DeepSeek 适配器只读 `toolCallId`（`dsh-llm-deepseek/lib/index.js:1675-1682`），但其它 provider 未验证 | 单测构造 `{role:'tool',toolCallId,content:[{type:'text'}],source:{kind:'tool',callId}}` 调 `ctx.llm.stream`，看是否报 `INVALID_REQUEST` | 退回「答案作为 user 文本块」的降级路径，并在文档标注为降级（不是默认） |
-| 5 | **非流式 30 s 的体验** | 网关 `requestTimeout=0`（`/opt/dsh-gateway/server.js:1513`），但移动网络/中间代理可能 60 s 断 | 用手机走网关跑一次 P0，观察是否断连 | 开 `POST /start` 立即返回 + 轮询（本设计已经是这样），仅当单次模型调用超过 60 s 时加 SSE |
+| 5 | **非流式 30 s 的体验** | 网关 `requestTimeout=0`（`<gateway>/server.js:1513`），但移动网络/中间代理可能 60 s 断 | 用手机走网关跑一次 P0，观察是否断连 | 开 `POST /start` 立即返回 + 轮询（本设计已经是这样），仅当单次模型调用超过 60 s 时加 SSE |
 | 6 | **多浏览器/多标签行为** | 宿主内存是唯一权威，但两个标签都可能提交 | 两个 Chrome profile 同时开同一会话，交替提交答案 | 以 `batchId` + `runId` 做 CAS：先到者生效，后到者 409 并返回当前 state；不做合并、不做最后一次写入覆盖 |
 | 7 | **面板 `inputActions` 是否一定存在** | slot 是 `scope:'session'`（`.../contract/slots.d.ts:53-58`），标准 props 是否含 `inputActions` 需运行时确认 | P0 里 `console.log(Object.keys(props))`，或在面板里 try/catch 调 `setDraft` | 启用兜底桥（v1 已验证） |
 | 8 | **`modelCatalog()` 的 `default` 可能不存在** | 无任何 routable provider 时 `default` 可能为空 | 在无 API key 的 profile 里调用一次 | 面板显示 `NO_MODEL`，提示去设置里配置密钥 |
