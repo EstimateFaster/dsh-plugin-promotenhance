@@ -1,0 +1,12 @@
+# dsh-prompt-enhance bundle patch
+#
+# v2：只挂宿主插件一行。
+# 不再需要 `prompt-enhancer` agent preset——增强过程不再落成 DSH 会话，
+# 模型调用与状态都在插件内存里，面板走 /prompt-enhance 路由。
+#
+# 部署级调整：在 profile 的 cordis.patch.yml 里按同 id 覆盖 config
+# （provider / model / reasoningEffort）。
+- insert:
+    - id: prompt-enhance
+      name: 'dsh-prompt-enhance'
+      config: {}

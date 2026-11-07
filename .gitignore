@@ -1,0 +1,21 @@
+# Runtime and local-only data
+.tmp-dsh/
+.tmp-shots/
+.dsh-ui-designer/
+node_modules/
+coverage/
+dist/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+.credentials.yaml
+*.pem
+*.key
+
+# Editor / OS noise
+.DS_Store
+*.log
+.idea/
+.vscode/

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Prompt enhance">
+  <defs>
+    <linearGradient id="pe-wand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b8cff"/>
+      <stop offset="1" stop-color="#8a5bff"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#f3f6ff"/>
+  <path d="M20 44 L40 24" stroke="url(#pe-wand)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M43 12 l2.6 6.4 L52 21 l-6.4 2.6 L43 30 l-2.6-6.4 L34 21 l6.4-2.6 Z" fill="#8a5bff"/>
+  <path d="M51 33 l1.6 3.9 3.9 1.6 -3.9 1.6 -1.6 3.9 -1.6-3.9 -3.9-1.6 3.9-1.6 Z" fill="#5b8cff"/>
+  <circle cx="22" cy="22" r="2.4" fill="#5b8cff" opacity="0.75"/>
+</svg>

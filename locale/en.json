@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Prompt Enhance",
+    "description": "Opens an independent enhancement session that clarifies a rough prompt, then inserts the finished prompt back into the composer."
+  }
+}
